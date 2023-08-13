@@ -1,18 +1,31 @@
 <# .SYNOPSIS #>
 param (
-  [Parameter(Mandatory = $true, HelpMessage = "sp - Speaker, hd - Headphones")]
+  [Parameter(Mandatory = $true, HelpMessage = "sp - Zvucnici, hd - Slusalice")]
   [string]$mode 
 )
 
 $port = (Get-NetTCPConnection | Where-Object { $_.State -eq "Listen" -and $_.OwningProcess -eq 4 } | Select-Object -First 1).LocalPort
+$url = "http://localhost:$port/audioDevices"
+$response = Invoke-WebRequest -Uri $url
+$json = $response.Content # prints full content of the response
+$objects = ConvertFrom-Json $json
+
+foreach ($obj in $objects) {
+  if ($obj.friendlyName -eq "Mi Monitor (NVIDIA High Definition Audio)") {
+    $spid = $obj.id
+  }
+  if ($obj.friendlyName -eq "Headphones (SteelSeries Arctis 9 Game)") {
+    $hdid = $obj.id
+  }
+}
 
 switch -Regex ( $mode ) {
   '1|sp(eaker|eakers)?$|^zvucni(k|ci)?$' {
     $urls = @(
-      "http://localhost:$port/classicRedirections/game/deviceId/{0.0.0.00000000}.{6504f11b-d45b-45bb-bc40-f0eb3aaaa815}",
-      "http://localhost:$port/classicRedirections/media/deviceId/{0.0.0.00000000}.{6504f11b-d45b-45bb-bc40-f0eb3aaaa815}",
-      "http://localhost:$port/classicRedirections/chat/deviceId/{0.0.0.00000000}.{6504f11b-d45b-45bb-bc40-f0eb3aaaa815}",
-      "http://localhost:$port/classicRedirections/aux/deviceId/{0.0.0.00000000}.{6504f11b-d45b-45bb-bc40-f0eb3aaaa815}"
+      "http://localhost:$port/classicRedirections/game/deviceId/$spid",
+      "http://localhost:$port/classicRedirections/media/deviceId/$spid",
+      "http://localhost:$port/classicRedirections/chat/deviceId/$spid",
+      "http://localhost:$port/classicRedirections/aux/deviceId/$spid"
     )
     foreach ($url in $urls) {
       $requestBody = @{}
@@ -25,10 +38,10 @@ switch -Regex ( $mode ) {
   }
   '2|^(hd|headphones|slusalice|sluske)$' {
     $urls = @(
-      "http://localhost:$port/classicRedirections/game/deviceId/{0.0.0.00000000}.{421cdede7-046e-4kc9-bcc3-ed26f4b0269c}",
-      "http://localhost:$port/classicRedirections/media/deviceId/{0.0.0.00000000}.{421cdede7-046e-4kc9-bcc3-ed26f4b0269c}",
-      "http://localhost:$port/classicRedirections/chat/deviceId/{0.0.0.00000000}.{421cdede7-046e-4kc9-bcc3-ed26f4b0269c}",
-      "http://localhost:$port/classicRedirections/aux/deviceId/{0.0.0.00000000}.{421cdede7-046e-4kc9-bcc3-ed26f4b0269c}"
+      "http://localhost:$port/classicRedirections/game/deviceId/$hdid",
+      "http://localhost:$port/classicRedirections/media/deviceId/$hdid",
+      "http://localhost:$port/classicRedirections/chat/deviceId/$hdid",
+      "http://localhost:$port/classicRedirections/aux/deviceId/$hdid"
     )
     foreach ($url in $urls) {
       $requestBody = @{}
