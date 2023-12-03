@@ -4,7 +4,7 @@ param (
   [string]$mode 
 )
 
-$port = (Get-NetTCPConnection | Where-Object { $_.State -eq "Listen" -and $_.OwningProcess -eq 4 } | Select-Object -First 1).LocalPort
+$port = (Get-NetTCPConnection | Where-Object { $_.State -eq "LISTEN" } | select @{Name="SteelSeriesSonar";Expression={(Get-Process -Id $_.OwningProcess).ProcessName}}, localaddress, localport | Where-Object { $_.SteelSeriesSonar -eq "SteelSeriesSonar" }).localport
 $url = "http://localhost:$port/audioDevices"
 $response = Invoke-WebRequest -Uri $url
 $json = $response.Content # prints full content of the response
